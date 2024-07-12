@@ -58,3 +58,44 @@ com.example.plugin.XmlNullPolicyPlugin
 
 
 xjc -d src -p com.example.model -extension -Xxmlnullpolicy -classpath path/to/your/classes your-schema.xsd
+
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.StringWriter;
+import java.lang.reflect.Field;
+
+public class Main {
+    public static void main(String[] args) throws JAXBException {
+        Example example = new Example();
+        example.setName(null); // This should result in an empty tag <name/>
+        example.setValue("Some value");
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(Example.class);
+        Marshaller marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        marshaller.setListener(new Marshaller.Listener() {
+            @Override
+            public void beforeMarshal(Object source) {
+                try {
+                    Class<?> clazz = source.getClass();
+                    for (Field field : clazz.getDeclaredFields()) {
+                        field.setAccessible(true);
+                        if (field.get(source) == null) {
+                            field.set(source, "");
+                        }
+                    }
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(example, writer);
+        System.out.println(writer.toString());
+    }
+}
