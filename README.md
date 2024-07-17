@@ -1,101 +1,47 @@
-<dependency>
-    <groupId>org.jvnet.jaxb2_commons</groupId>
-    <artifactId>jaxb2-basics</artifactId>
-    <version>1.11.1</version>
-</dependency>
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Puppy Crawl//DTD Check Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
-package com.example.plugin;
+<module name="Checker">
+    <!-- Other checkstyle rules -->
 
-import com.sun.codemodel.JAnnotationUse;
-import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.JDefinedClass;
-import com.sun.codemodel.JFieldVar;
-import com.sun.tools.xjc.BadCommandLineException;
-import com.sun.tools.xjc.Options;
-import com.sun.tools.xjc.Plugin;
-import com.sun.tools.xjc.outline.ClassOutline;
-import com.sun.tools.xjc.outline.Outline;
-import org.eclipse.persistence.oxm.annotations.XmlNullPolicy;
-import org.eclipse.persistence.oxm.annotations.XmlMarshalNullRepresentation;
+    <module name="TreeWalker">
+        <!-- Exclude a specific package -->
+        <module name="SuppressionFilter">
+            <property name="file" value="src/main/java/com/example/package/to/exclude/.*"/>
+        </module>
 
-public class XmlNullPolicyPlugin extends Plugin {
-
-    @Override
-    public String getOptionName() {
-        return "Xxmlnullpolicy";
-    }
-
-    @Override
-    public String getUsage() {
-        return "  -Xxmlnullpolicy    :  Add @XmlNullPolicy annotations to generated classes";
-    }
-
-    @Override
-    public int parseArgument(Options opt, String[] args, int i) throws BadCommandLineException {
-        return 0;
-    }
-
-    @Override
-    public boolean run(Outline outline, Options opt, ErrorHandler errorHandler) {
-        for (ClassOutline classOutline : outline.getClasses()) {
-            JDefinedClass definedClass = classOutline.implClass;
-            for (JFieldVar field : definedClass.fields().values()) {
-                JAnnotationUse xmlElementAnnotation = field.annotate(XmlElement.class);
-                xmlElementAnnotation.param("nillable", true);
-
-                JAnnotationUse xmlNullPolicyAnnotation = field.annotate(XmlNullPolicy.class);
-                xmlNullPolicyAnnotation.param("emptyNodeRepresentsNull", true);
-                xmlNullPolicyAnnotation.param("nullRepresentationForXml", XmlMarshalNullRepresentation.EMPTY_NODE);
-            }
-        }
-        return true;
-    }
-}
+        <!-- Other TreeWalker modules -->
+    </module>
+</module>
 
 
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>example-project</artifactId>
+    <version>1.0-SNAPSHOT</version>
 
-com.example.plugin.XmlNullPolicyPlugin
-
-
-xjc -d src -p com.example.model -extension -Xxmlnullpolicy -classpath path/to/your/classes your-schema.xsd
-
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.io.StringWriter;
-import java.lang.reflect.Field;
-
-public class Main {
-    public static void main(String[] args) throws JAXBException {
-        Example example = new Example();
-        example.setName(null); // This should result in an empty tag <name/>
-        example.setValue("Some value");
-
-        JAXBContext jaxbContext = JAXBContext.newInstance(Example.class);
-        Marshaller marshaller = jaxbContext.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        marshaller.setListener(new Marshaller.Listener() {
-            @Override
-            public void beforeMarshal(Object source) {
-                try {
-                    Class<?> clazz = source.getClass();
-                    for (Field field : clazz.getDeclaredFields()) {
-                        field.setAccessible(true);
-                        if (field.get(source) == null) {
-                            field.set(source, "");
-                        }
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        StringWriter writer = new StringWriter();
-        marshaller.marshal(example, writer);
-        System.out.println(writer.toString());
-    }
-}
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
